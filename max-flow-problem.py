@@ -1,4 +1,3 @@
-
 import random
 import copy
 from collections import defaultdict
@@ -62,20 +61,31 @@ class Graph:
  
         max_flow = 0
 
-        path = []
+        all_paths = []
+        all_paths_weight = []
+        number_of_paths=0
 
         while self.bfs(source, sink, parent) :
             path_flow = float("Inf")
             s = sink
 
+            path = []
+
             while(s !=  source):
+                path.append(s)
                 path_flow = min(path_flow, self.graph[parent[s]][s])
                 s = parent[s]
 
             max_flow +=  path_flow
             v = sink
 
-            path.append(v)
+            number_of_paths += 1
+
+            path.append(source)
+            path.reverse()
+
+            all_paths.append(path)
+            all_paths_weight.append(path_flow)
 
             while(v !=  source):
                 u = parent[v]
@@ -85,7 +95,11 @@ class Graph:
                 #print(u)
                 #print(v)
  
-        path.reverse()
+        print("\nTotal de caminos: ",number_of_paths)
+        print("Caminos:")
+        for it in range(number_of_paths):
+          print(it+1, all_paths[it], "Peso:" ,all_paths_weight[it])
+
         return max_flow
 
 class Drawing:
