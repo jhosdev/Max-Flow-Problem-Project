@@ -1,5 +1,6 @@
 
 import random
+import copy
 from collections import defaultdict
 import networkx as nx
 import matplotlib.pyplot as plt
@@ -22,12 +23,10 @@ graph_ex = [[0, 16, 13, 0, 0, 0],
         [0, 0, 0, 7, 0, 4],
         [0, 0, 0, 0, 0, 0]]
 
-# This class represents a directed graph
-# using adjacency matrix representation
 class Graph:
  
     def __init__(self, graph):
-        self.graph = graph  # residual graph
+        self.graph = graph
         self.ROW = len(graph)
         # self.COL = len(gr[0])
  
@@ -35,74 +34,58 @@ class Graph:
     residual graph. Also fills parent[] to store the path '''
  
     def bfs(self, s, t, parent):
- 
-        # Mark all the vertices as not visited
+
         visited = [False]*(self.ROW)
- 
-        # Create a queue for BFS
+
         queue = []
  
-        # Mark the source node as visited and enqueue it
         queue.append(s)
         visited[s] = True
  
-         # Standard BFS Loop
         while queue:
  
-            # Dequeue a vertex from queue and print it
             u = queue.pop(0)
- 
-            # Get all adjacent vertices of the dequeued vertex u
-            # If a adjacent has not been visited, then mark it
-            # visited and enqueue it
+
             for ind, val in enumerate(self.graph[u]):
                 if visited[ind] == False and val > 0:
-                      # If we find a connection to the sink node,
-                    # then there is no point in BFS anymore
-                    # We just have to set its parent and can return true
                     queue.append(ind)
                     visited[ind] = True
                     parent[ind] = u
                     if ind == t:
                         return True
  
-        # We didn't reach sink in BFS starting
-        # from source, so return false
         return False
-             
-     
-    # Returns the maximum flow from s to t in the given graph
+
     def ford_fulkerson(self, source, sink):
- 
-        # This array is filled by BFS and to store path
+
         parent = [-1]*(self.ROW)
  
-        max_flow = 0 # There is no flow initially
- 
-        # Augment the flow while there is path from source to sink
+        max_flow = 0
+
+        path = []
+
         while self.bfs(source, sink, parent) :
- 
-            # Find minimum residual capacity of the edges along the
-            # path filled by BFS. Or we can say find the maximum flow
-            # through the path found.
             path_flow = float("Inf")
             s = sink
+
             while(s !=  source):
-                path_flow = min (path_flow, self.graph[parent[s]][s])
+                path_flow = min(path_flow, self.graph[parent[s]][s])
                 s = parent[s]
- 
-            # Add path flow to overall flow
+
             max_flow +=  path_flow
- 
-            # update residual capacities of the edges and reverse edges
-            # along the path
             v = sink
+
+            path.append(v)
+
             while(v !=  source):
                 u = parent[v]
                 self.graph[u][v] -= path_flow
                 self.graph[v][u] += path_flow
                 v = parent[v]
+                #print(u)
+                #print(v)
  
+        path.reverse()
         return max_flow
 
 class Drawing:
@@ -118,6 +101,7 @@ class Drawing:
         nx.draw(G, pos, with_labels=True, node_color='lightblue', edge_color='gray')
         nx.draw_networkx_edge_labels(G, pos, edge_labels=nx.get_edge_attributes(G, 'capacity'))
         plt.savefig(name)
+        plt.show()
 
 
 class UserInterface:
@@ -126,6 +110,7 @@ class UserInterface:
         self.max = max
         self.choice = None
         self.matrix = None
+        self.initial_matrix = None
         self.n = None
         self.source = None
         self.sink = None
@@ -133,11 +118,10 @@ class UserInterface:
     def generate_random_matrix(self, n):
         matrix = [[0] * n for _ in range(n)]
 
-        # Generate random values for the matrix
         for i in range(n):
             for j in range(n):
-                if i != j:
-                    matrix[i][j] = random.randint(0, 1)
+                if i != j and j != 0:
+                    matrix[i][j] = random.randint(0, 9)
                 else:
                     matrix[i][j] = 0
 
@@ -145,6 +129,8 @@ class UserInterface:
     
     def input_matrix_manually(self, n):
         matrix = []
+        print("Ingresa el valor de cada elemento de la matriz.")
+        print("0 simboliza que no hay conexion, un valor mayor a 0 establece conexion ademas de almacenar el peso deseado")
         for _ in range(n):
             row = []
             for _ in range(n):
@@ -154,47 +140,58 @@ class UserInterface:
         return matrix
     
     def get_rows(self):
-        self.n = int(input("Enter the number of rows: "))
+        self.n = int(input("Ingrese el tamanio de la matriz: "))
 
     def get_initial_input(self):
-        self.choice = input("Enter 'a' to generate a random matrix, 'm' to input data manually or 't' to test with an example matrix: ")
+        print('Bienvenido al programa del Flujo Maximo')
+        self.choice = input("Selecciona como deseas ingresar la matriz\n'a' para generar la matriz aleatoriamente\n'm' para generarla manualmente\n't' para usar una matriz de prueba\n")
 
         if self.choice == 'a':
             self.get_rows()
             self.matrix = self.generate_random_matrix(self.n)
+            self.initial_matrix = copy.deepcopy(self.matrix)
         elif self.choice == 'm':
             self.get_rows()
             self.matrix = self.input_matrix_manually(self.n)
+            self.initial_matrix = copy.deepcopy(self.matrix)
         elif self.choice == 't':
             self.matrix = graph_ex2
+            self.initial_matrix = copy.deepcopy(self.matrix)
             self.n = len(self.matrix)
         else:
-            print("Invalid input")
+            print("Option invalida")
             self.get_initial_input()
 
-    def get_source_sink(self):
-        self.source = int(input("Enter the source: "))
-        self.sink = int(input("Enter the sink: "))
+    def print_matrix(self):
+      print("\nMatriz generada:")
+      for i, row in enumerate(self.matrix):
+          print(f'Vertice {i}:', row)
+        
+      available_nodes = ', '.join(str(i) for i in range(len(self.matrix)))
+      print("Vertices disponibles:", available_nodes)
+
+        
 
     def print_output(self):
-
         g= Graph(self.matrix)
         initial = Drawing()
         final = Drawing()
 
-        self.source = int(input("Enter the source: "))
-        self.sink = int(input("Enter the sink: "))
+        print("\nAhora, seleccione los vertices para calcular el flujo maximo")
+        self.source = int(input("Ingresa el vertice de origen: "))
+        self.sink = int(input("Ingresa el vertice final: "))
 
-        initial.draw_graph(self.matrix, 'initial_graph.png')
-        plt.clf()
+        #initial.draw_graph(self.matrix, 'initial_graph.png')
+        #plt.clf()
 
-        print("The maximum possible flow is %d " % g.ford_fulkerson(self.source, self.sink))
-        
-        final.draw_graph(self.matrix, 'final_graph.png')
+        print("\nEl flujo maximo es: %d " % g.ford_fulkerson(self.source, self.sink))
+        print("\n")
+        final.draw_graph(self.initial_matrix, 'initial_graph.png')
  
 def main():
     u = UserInterface(5,15)
     u.get_initial_input()
+    u.print_matrix()
     u.print_output()
     
 
