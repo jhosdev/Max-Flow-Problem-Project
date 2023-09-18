@@ -101,7 +101,6 @@ class Drawing:
         nx.draw(G, pos, with_labels=True, node_color='lightblue', edge_color='gray')
         nx.draw_networkx_edge_labels(G, pos, edge_labels=nx.get_edge_attributes(G, 'capacity'))
         plt.savefig(name)
-        plt.show()
 
 
 class UserInterface:
